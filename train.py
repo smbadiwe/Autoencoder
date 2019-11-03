@@ -3,7 +3,7 @@ import time
 import torch.optim as optim
 from torch import nn
 from torch.utils.data import DataLoader
-
+import torch.nn.functional as F
 from data_gen import VaeDataset
 from models import SegNet
 from utils import *
@@ -14,7 +14,7 @@ def train(epoch, train_loader, model, optimizer):
     model.train()
 
     # Loss function
-    # criterion = nn.MSELoss().to(device)
+    # criterion = nn.KLDivLoss.MSELoss().to(device)
 
     batch_time = ExpoAverageMeter()  # forward prop. + back prop. time
     losses = ExpoAverageMeter()  # loss (per word decoded)

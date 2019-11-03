@@ -19,21 +19,28 @@ def main():
     model = model.to(device)
     model.eval()
 
-    test_path = 'data/test/'
-    test_images = [os.path.join(test_path, f) for f in os.listdir(test_path) if f.endswith('.jpg')]
+    ensure_folder('images')
+    test_path = 'images'
+    test_images = [os.path.join(test_path, f) for f in os.listdir(test_path) if f.endswith('_image.png')]
 
     num_test_samples = 10
-    samples = random.sample(test_images, num_test_samples)
+    if len(test_images) == 0:
+        test_path = 'data/test/'
+        test_images = [os.path.join(test_path, f) for f in os.listdir(test_path) if f.endswith('.jpg')]
 
+        for i, path in enumerate(test_images):
+            # Read images
+            img = imread(path)
+            img = imresize(img, (imsize, imsize))
+            imsave('images/{}_image.png'.format(i), img)
+
+    samples = random.sample(test_images, num_test_samples)
     imgs = torch.zeros([num_test_samples, 3, imsize, imsize], dtype=torch.float, device=device)
 
-    ensure_folder('images')
     for i, path in enumerate(samples):
         # Read images
         img = imread(path)
         img = imresize(img, (imsize, imsize))
-        imsave('images/{}_image.png'.format(i), img)
-
         img = img.transpose(2, 0, 1)
         assert img.shape == (3, imsize, imsize)
         assert np.max(img) <= 255

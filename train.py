@@ -7,34 +7,42 @@ import torch.nn.functional as F
 from data_gen import VaeDataset
 from models import SegNet
 from utils import *
+EPS = 1e-12
 
 
 def mse_loss(y_pred, y_true):
+    return (y_pred - y_true).pow(2).mean()
+
+
+def rmse_loss(y_pred, y_true):
     return torch.sqrt((y_pred - y_true).pow(2).mean())
 
 
 def dis_loss(y_pred, y_true):
     """
-    Itakura-Saito distance
+    Itakura-Saito distance, using mean instead of sum
     :param y_pred:
     :param y_true:
     :return:
     """
-    return ((y_pred / y_true) - torch.log((y_pred / y_true)) - 1).sum()
+    k_i = y_pred / (y_true + EPS)
+    return (k_i - torch.log(k_i + EPS) - 1).mean()
 
 
 def i_div_loss(y_pred, y_true):
     """
-    I-divergence
+    I-divergence, using mean instead of sum
     :param y_pred:
     :param y_true:
     :return:
     """
-    return (y_true * ((y_pred / y_true) - torch.log((y_pred / y_true)) - 1)).sum()
+    k_i = y_pred / (y_true + EPS)
+    return (y_true * (k_i - torch.log(k_i + EPS) - 1)).mean()
 
 
 losses_dict = {
     "mse": mse_loss,
+    "rmse": rmse_loss,
     "idiv": i_div_loss,
     "dis": dis_loss
 }
@@ -52,6 +60,7 @@ def train(epoch, train_loader, model, optimizer, loss_fn):
 
     start = time.time()
 
+    loss_function = losses_dict[loss_fn]
     # Batches
     for i_batch, (x, y) in enumerate(train_loader):
         # Set device options
@@ -67,7 +76,7 @@ def train(epoch, train_loader, model, optimizer, loss_fn):
         y_hat = model(x)
         # print('y_hat.size(): ' + str(y_hat.size())) # [32, 3, 224, 224]
 
-        loss = losses_dict[loss_fn](y_hat, y)
+        loss = loss_function(y_hat, y)
         loss.backward()
 
         # def closure():
@@ -91,9 +100,8 @@ def train(epoch, train_loader, model, optimizer, loss_fn):
         if i_batch % print_freq == 0:
             print('Epoch: [{0}][{1}/{2}]\t'
                   'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(epoch, i_batch, len(train_loader),
-                                                                  batch_time=batch_time,
-                                                                  loss=losses))
+                  '{3} Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(epoch, i_batch, len(train_loader), loss_fn,
+                                                                      batch_time=batch_time, loss=losses))
 
 
 def valid(val_loader, model, loss_fn):
@@ -106,7 +114,7 @@ def valid(val_loader, model, loss_fn):
     losses = ExpoAverageMeter()  # loss (per word decoded)
 
     start = time.time()
-
+    loss_function = losses_dict[loss_fn]
     with torch.no_grad():
         # Batches
         for i_batch, (x, y) in enumerate(val_loader):
@@ -116,7 +124,7 @@ def valid(val_loader, model, loss_fn):
 
             y_hat = model(x)
 
-            loss = losses_dict[loss_fn](y_hat, y)
+            loss = loss_function(y_hat, y)
 
             # Keep track of metrics
             losses.update(loss.item())
@@ -128,9 +136,8 @@ def valid(val_loader, model, loss_fn):
             if i_batch % print_freq == 0:
                 print('Validation: [{0}/{1}]\t'
                       'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                      'Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(i_batch, len(val_loader),
-                                                                      batch_time=batch_time,
-                                                                      loss=losses))
+                      '{2} Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(i_batch, len(val_loader), loss_fn,
+                                                                          batch_time=batch_time, loss=losses))
 
     return losses.avg
 
@@ -155,14 +162,14 @@ def main(loss_fn):
     # optimizer = optim.LBFGS(model.parameters(), lr=0.8)
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
-    best_loss = 100000
+    best_loss = 9.e15
     epochs_since_improvement = 0
 
     # Epochs
     for epoch in range(start_epoch, epochs):
         # Decay learning rate if there is no improvement for 8 consecutive epochs, and terminate training after 20
-        if epochs_since_improvement == 20:
-            break
+        # if epochs_since_improvement == 20:
+        #     break
         if epochs_since_improvement > 0 and epochs_since_improvement % 8 == 0:
             adjust_learning_rate(optimizer, 0.8)
 
@@ -187,4 +194,7 @@ def main(loss_fn):
 
 
 if __name__ == '__main__':
+    # main(loss_fn="rmse")
     main(loss_fn="mse")
+    # main(loss_fn="dis")
+    # main(loss_fn="idiv")

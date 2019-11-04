@@ -1,11 +1,11 @@
-import os
+from os import makedirs, path
 
 from config import *
 
 
 def ensure_folder(folder):
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+    if not path.exists(folder):
+        makedirs(folder)
 
 
 def adjust_learning_rate(optimizer, shrink_factor):
@@ -31,12 +31,13 @@ class ExpoAverageMeter(object):
         self.avg = self.beta * self.avg + (1 - self.beta) * self.val
 
 
-def save_checkpoint(epoch, model, optimizer, val_loss, is_best):
-    ensure_folder(save_folder)
+def save_checkpoint(epoch, model, optimizer, loss_fn, val_loss, is_best):
+    directory = path.join(save_folder, loss_fn)
+    ensure_folder(directory)
     state = {'model': model,
              'optimizer': optimizer}
-    filename = '{0}/checkpoint_{1}_{2:.3f}.tar'.format(save_folder, epoch, val_loss)
+    filename = path.join(directory, 'checkpoint_{0}_{1:.3f}.tar'.format(epoch, val_loss))
     torch.save(state, filename)
     # If this checkpoint is the best so far, store a copy so it doesn't get overwritten by a worse checkpoint
     if is_best:
-        torch.save(state, '{}/BEST_checkpoint.tar'.format(save_folder))
+        torch.save(state, path.join(directory, 'BEST_checkpoint.tar'))

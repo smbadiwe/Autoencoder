@@ -9,7 +9,38 @@ from models import SegNet
 from utils import *
 
 
-def train(epoch, train_loader, model, optimizer):
+def mse_loss(y_pred, y_true):
+    return torch.sqrt((y_pred - y_true).pow(2).mean())
+
+
+def dis_loss(y_pred, y_true):
+    """
+    Itakura-Saito distance
+    :param y_pred:
+    :param y_true:
+    :return:
+    """
+    return ((y_pred / y_true) - torch.log((y_pred / y_true)) - 1).sum()
+
+
+def i_div_loss(y_pred, y_true):
+    """
+    I-divergence
+    :param y_pred:
+    :param y_true:
+    :return:
+    """
+    return (y_true * ((y_pred / y_true) - torch.log((y_pred / y_true)) - 1)).sum()
+
+
+losses_dict = {
+    "mse": mse_loss,
+    "idiv": i_div_loss,
+    "dis": dis_loss
+}
+
+
+def train(epoch, train_loader, model, optimizer, loss_fn):
     # Ensure dropout layers are in train mode
     model.train()
 
@@ -36,7 +67,7 @@ def train(epoch, train_loader, model, optimizer):
         y_hat = model(x)
         # print('y_hat.size(): ' + str(y_hat.size())) # [32, 3, 224, 224]
 
-        loss = torch.sqrt((y_hat - y).pow(2).mean())
+        loss = losses_dict[loss_fn](y_hat, y)
         loss.backward()
 
         # def closure():
@@ -65,7 +96,7 @@ def train(epoch, train_loader, model, optimizer):
                                                                   loss=losses))
 
 
-def valid(val_loader, model):
+def valid(val_loader, model, loss_fn):
     model.eval()  # eval mode (no dropout or batchnorm)
 
     # Loss function
@@ -85,7 +116,7 @@ def valid(val_loader, model):
 
             y_hat = model(x)
 
-            loss = torch.sqrt((y_hat - y).pow(2).mean())
+            loss = losses_dict[loss_fn](y_hat, y)
 
             # Keep track of metrics
             losses.update(loss.item())
@@ -104,7 +135,7 @@ def valid(val_loader, model):
     return losses.avg
 
 
-def main():
+def main(loss_fn):
     train_loader = DataLoader(dataset=VaeDataset('train'), batch_size=batch_size, shuffle=True,
                               pin_memory=True, drop_last=True)
     val_loader = DataLoader(dataset=VaeDataset('valid'), batch_size=batch_size, shuffle=False,
@@ -136,25 +167,24 @@ def main():
             adjust_learning_rate(optimizer, 0.8)
 
         # One epoch's training
-        train(epoch, train_loader, model, optimizer)
+        train(epoch=epoch, train_loader=train_loader, model=model, optimizer=optimizer, loss_fn=loss_fn)
 
         # One epoch's validation
-        val_loss = valid(val_loader, model)
-        print('\n * LOSS - {loss:.3f}\n'.format(loss=val_loss))
+        val_loss = valid(val_loader=val_loader, model=model, loss_fn=loss_fn)
+        print(f'\n * {loss_fn} - LOSS - {val_loss:.3f}\n')
 
         # Check if there was an improvement
         is_best = val_loss < best_loss
-        best_loss = min(best_loss, val_loss)
-
         if not is_best:
             epochs_since_improvement += 1
             print("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
         else:
             epochs_since_improvement = 0
+            best_loss = val_loss
 
         # Save checkpoint
-        save_checkpoint(epoch, model, optimizer, val_loss, is_best)
+        save_checkpoint(epoch, model, optimizer, loss_fn, val_loss=val_loss, is_best=is_best)
 
 
 if __name__ == '__main__':
-    main()
+    main(loss_fn="mse")

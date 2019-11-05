@@ -25,22 +25,13 @@ def dis_loss(y_pred, y_true):
     :param y_true:
     :return:
     """
-    # k_i = y_pred / (y_true + EPS)
-    # result = (k_i - torch.log(k_i + EPS) - 1).mean()
-
+    # set log(0) and x/0 to 0.
+    mask = torch.ones(y_pred.size(), dtype=torch.float32, device=device)
+    mask[y_pred == 0] = 0.0
+    mask[y_true == 0] = 0.0
     k_i = y_pred / (y_true + EPS)
-    nz = torch.nonzero(k_i)
-    k_i[nz] = (k_i[nz] - torch.log(k_i[nz]) - 1)
-    result = k_i.mean()
+    result = (mask * (k_i - torch.log(k_i + EPS) - 1)).mean()
 
-    # k_i = y_pred / y_true
-    # result = k_i - torch.log(k_i) - 1
-    # result[torch.isinf(result) | torch.isnan(result)] = 0.0
-    # result = result.mean()
-    # if result == 0.0:
-    #     print(f"pred: {y_pred[:5]}...")
-    #     print(f"true: {y_true[:5]}...")
-    #     print()
     return result
 
 
@@ -51,8 +42,11 @@ def i_div_loss(y_pred, y_true):
     :param y_true:
     :return:
     """
+    # set log(0) and x/0 to 0.
+    mask = torch.ones(y_pred.size(), dtype=torch.float32, device=device)
+    mask[y_pred == 0] = 0.0
     k_i = y_pred / (y_true + EPS)
-    return (y_true * (k_i - torch.log(k_i + EPS) - 1)).mean()
+    return (y_true * mask * (k_i - torch.log(k_i + EPS) - 1)).mean()
 
 
 losses_dict = {
@@ -210,6 +204,6 @@ def main(loss_fn):
 
 if __name__ == '__main__':
     # main(loss_fn="rmse")
-    main(loss_fn="mse")
-    # main(loss_fn="dis")
+    # main(loss_fn="mse")
+    main(loss_fn="dis")
     # main(loss_fn="idiv")

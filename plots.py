@@ -56,7 +56,7 @@ def visualize(loss_fn, label=None):
         # plt.yscale("log")
     else:
         plt.plot(epochs_val, get_loss_values(loss_fn), label=label)
-    plt.title('Reconstruction Error vs Epoch')
+    plt.title('Reconstruction Error vs Epoch - Using ' + label)
     plt.legend()
     plt.xlabel("epoch")
     plt.ylabel(f"error ({label})")
@@ -66,4 +66,5 @@ def visualize(loss_fn, label=None):
 if __name__ == "__main__":
     visualize("idiv", r"$\mathit{I}$-divergence")
     visualize("rmse", r"RMSE")
+    visualize("mse", r"MSE")
     visualize("dis", r"$d_{IS}$")

@@ -92,7 +92,7 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5):
 
 
 if __name__ == '__main__':
-    main(loss_fn='dis', checkpoint_file=0, num_test_samples=1)
-    # for lfn in ["rmse", "idiv", "dis"]:
-    #     for fn in [0, 20, 60, 115, None]:
-    #         main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=1)
+    # main(loss_fn='dis', checkpoint_file=0, num_test_samples=1)
+    for lfn in ["mse", "rmse", "idiv", "dis"]:
+        for fn in [0, 20, 60, 115, None]:
+            main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=1)

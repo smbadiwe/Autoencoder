@@ -14,7 +14,7 @@ def imresize(arr, dim_tuple):
     return np.array(Image.fromarray(arr).resize(size=dim_tuple))
 
 
-def main(loss_fn="mse", checkpoint_file='BEST_checkpoint', num_test_samples=5):
+def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5):
     """
 
     :param loss_fn: The loss used. Here's it'll be used as sub-directory to get the actual model.
@@ -22,6 +22,8 @@ def main(loss_fn="mse", checkpoint_file='BEST_checkpoint', num_test_samples=5):
     :param num_test_samples:
     :return:
     """
+    if checkpoint_file is None:
+        checkpoint_file = 'BEST_checkpoint'
     folder = path.join(save_folder, loss_fn)
     try:
         checkpoint_file += 0  # test if param is int
@@ -46,6 +48,7 @@ def main(loss_fn="mse", checkpoint_file='BEST_checkpoint', num_test_samples=5):
 
     n_test_img = len(test_images)
     if n_test_img < num_test_samples:
+        print(f"Gathering {num_test_samples} test images")
         test_path = 'data/test/'
         test_images_orig = [path.join(test_path, f) for f in listdir(test_path) if f.endswith('.jpg')]
 
@@ -69,12 +72,14 @@ def main(loss_fn="mse", checkpoint_file='BEST_checkpoint', num_test_samples=5):
         assert np.max(img) <= 255
         imgs[i] = torch.FloatTensor(img / 255.)
 
-    imgs = torch.tensor(imgs)
+    # imgs = torch.tensor(imgs)
 
     with torch.no_grad():
         preds = model(imgs)
 
     ck = path.basename(checkpoint_file).replace("checkpoint", "").replace(".tar", "")
+
+    # for i, fpath in enumerate(test_images):
     for i in range(num_test_samples):
         out = preds[i]
         out = out.cpu().numpy()
@@ -87,4 +92,7 @@ def main(loss_fn="mse", checkpoint_file='BEST_checkpoint', num_test_samples=5):
 
 
 if __name__ == '__main__':
-    main()
+    main(loss_fn='dis', checkpoint_file=0, num_test_samples=1)
+    # for lfn in ["rmse", "idiv", "dis"]:
+    #     for fn in [0, 20, 60, 115, None]:
+    #         main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=1)

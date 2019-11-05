@@ -1,5 +1,5 @@
 import torch.nn as nn
-from torchsummary import summary
+from torchsummary_v2 import summary
 
 from config import device, imsize
 
@@ -127,6 +127,8 @@ class SegNet(nn.Module):
         down4, indices_4, unpool_shape4 = self.down4(down3)
         down5, indices_5, unpool_shape5 = self.down5(down4)
 
+        # TODO: Add layer(s) that shrink the 7x7x512 even further. See what happens
+
         up5 = self.up5(down5, indices_5, unpool_shape5)
         up4 = self.up4(up5, indices_4, unpool_shape4)
         up3 = self.up3(up4, indices_3, unpool_shape3)
@@ -173,5 +175,5 @@ class SegNet(nn.Module):
 
 if __name__ == '__main__':
     model = SegNet().to(device)
-
+    # print(model)
     summary(model, (3, imsize, imsize))

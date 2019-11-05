@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from config import epochs, save_folder
 from os import path
 from glob import glob
+import numpy as np
 
 
 def get_loss_values(loss_fn):
@@ -50,12 +51,19 @@ def visualize(loss_fn, label=None):
         label = loss_fn
     epochs_val = range(epochs)
     plt.figure()
-    plt.plot(epochs_val[5:], get_loss_values(loss_fn)[5:], label=label)
+    if loss_fn == "dis":
+        plt.plot(epochs_val, [np.log(d) for d in get_loss_values(loss_fn)], label=label)
+        # plt.yscale("log")
+    else:
+        plt.plot(epochs_val, get_loss_values(loss_fn), label=label)
     plt.title('Reconstruction Error vs Epoch')
     plt.legend()
+    plt.xlabel("epoch")
+    plt.ylabel(f"error ({label})")
     plt.show()
 
 
 if __name__ == "__main__":
     visualize("idiv", r"$\mathit{I}$-divergence")
     visualize("rmse", r"RMSE")
+    visualize("dis", r"$d_{IS}$")

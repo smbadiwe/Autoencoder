@@ -25,8 +25,23 @@ def dis_loss(y_pred, y_true):
     :param y_true:
     :return:
     """
+    # k_i = y_pred / (y_true + EPS)
+    # result = (k_i - torch.log(k_i + EPS) - 1).mean()
+
     k_i = y_pred / (y_true + EPS)
-    return (k_i - torch.log(k_i + EPS) - 1).mean()
+    nz = torch.nonzero(k_i)
+    k_i[nz] = (k_i[nz] - torch.log(k_i[nz]) - 1)
+    result = k_i.mean()
+
+    # k_i = y_pred / y_true
+    # result = k_i - torch.log(k_i) - 1
+    # result[torch.isinf(result) | torch.isnan(result)] = 0.0
+    # result = result.mean()
+    # if result == 0.0:
+    #     print(f"pred: {y_pred[:5]}...")
+    #     print(f"true: {y_true[:5]}...")
+    #     print()
+    return result
 
 
 def i_div_loss(y_pred, y_true):

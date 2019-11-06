@@ -35,7 +35,7 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5):
         checkpoint_file = fs[0]
     except TypeError:
         checkpoint_file = path.join(folder, f"{checkpoint_file}.tar")
-    print(f'checkpoint: {checkpoint_file}')
+    # print(f'checkpoint: {checkpoint_file}')
     # Load model
     checkpoint = torch.load(checkpoint_file)
     model = checkpoint['model']
@@ -48,7 +48,7 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5):
 
     n_test_img = len(test_images)
     if n_test_img < num_test_samples:
-        print(f"Gathering {num_test_samples} test images")
+        print(f"n_test_img: {n_test_img}. num_test_samples: {num_test_samples}")
         test_path = 'data/test/'
         test_images_orig = [path.join(test_path, f) for f in listdir(test_path) if f.endswith('.jpg')]
 
@@ -62,7 +62,8 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5):
             test_images.append(fname)
 
     imgs = torch.zeros([num_test_samples, 3, imsize, imsize], dtype=torch.float, device=device)
-
+    test_images.sort()
+    print(f"\ntest images: {test_images}\n")
     for i, fpath in enumerate(test_images):
         # Read images
         img = imread(fpath)
@@ -72,14 +73,12 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5):
         assert np.max(img) <= 255
         imgs[i] = torch.FloatTensor(img / 255.)
 
-    # imgs = torch.tensor(imgs)
+    imgs = torch.tensor(imgs)
 
     with torch.no_grad():
         preds = model(imgs)
 
     ck = path.basename(checkpoint_file).replace("checkpoint", "").replace(".tar", "")
-
-    # for i, fpath in enumerate(test_images):
     for i in range(num_test_samples):
         out = preds[i]
         out = out.cpu().numpy()
@@ -95,4 +94,5 @@ if __name__ == '__main__':
     # main(loss_fn='dis', checkpoint_file=0, num_test_samples=1)
     for lfn in ["mse", "rmse", "idiv", "dis"]:
         for fn in [0, 20, 60, 115, None]:
-            main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=1)
+            main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=3)
+            # main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=1)

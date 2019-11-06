@@ -205,5 +205,5 @@ def main(loss_fn):
 if __name__ == '__main__':
     # main(loss_fn="rmse")
     # main(loss_fn="mse")
-    main(loss_fn="dis")
-    # main(loss_fn="idiv")
+    # main(loss_fn="dis")
+    main(loss_fn="idiv")

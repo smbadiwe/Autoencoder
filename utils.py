@@ -31,8 +31,12 @@ class ExpoAverageMeter(object):
         self.avg = self.beta * self.avg + (1 - self.beta) * self.val
 
 
-def save_checkpoint(epoch, model, optimizer, loss_fn, val_loss, is_best):
-    directory = path.join(save_folder, loss_fn)
+def get_checkpoint_folder(loss_fn, shrink):
+    return path.join(save_folder, f"shrink{shrink}" if shrink else "", loss_fn)
+
+
+def save_checkpoint(epoch, model, optimizer, loss_fn, val_loss, is_best, shrink):
+    directory = get_checkpoint_folder(loss_fn=loss_fn, shrink=shrink)
     ensure_folder(directory)
     state = {'model': model,
              'optimizer': optimizer}

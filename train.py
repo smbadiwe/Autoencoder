@@ -151,14 +151,14 @@ def valid(val_loader, model, loss_fn):
     return losses.avg
 
 
-def main(loss_fn):
+def main(loss_fn, shrink=0):
     train_loader = DataLoader(dataset=VaeDataset('train'), batch_size=batch_size, shuffle=True,
                               pin_memory=True, drop_last=True)
     val_loader = DataLoader(dataset=VaeDataset('valid'), batch_size=batch_size, shuffle=False,
                             pin_memory=True, drop_last=True)
     # Create SegNet model
     label_nbr = 3
-    model = SegNet(label_nbr)
+    model = SegNet(n_classes=label_nbr, shrink=shrink)
     if torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         # dim = 0 [40, xxx] -> [10, ...], [10, ...], [10, ...], [10, ...] on 4 GPUs
@@ -199,11 +199,11 @@ def main(loss_fn):
             best_loss = val_loss
 
         # Save checkpoint
-        save_checkpoint(epoch, model, optimizer, loss_fn, val_loss=val_loss, is_best=is_best)
+        save_checkpoint(epoch, model, optimizer, loss_fn, val_loss=val_loss, is_best=is_best, shrink=shrink)
 
 
 if __name__ == '__main__':
     # main(loss_fn="rmse")
     # main(loss_fn="mse")
     # main(loss_fn="dis")
-    main(loss_fn="idiv")
+    main(loss_fn="idiv", shrink=1)

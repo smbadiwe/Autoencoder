@@ -101,35 +101,44 @@ class segnetUp3(nn.Module):
 
 
 class SegNet(nn.Module):
-    def __init__(self, n_classes=3, in_channels=3, is_unpooling=True):
+    def __init__(self, n_classes=3, in_channels=3, is_unpooling=True, shrink=0):
         super(SegNet, self).__init__()
 
         self.in_channels = in_channels
         self.is_unpooling = is_unpooling
-
+        self.shrink = shrink
         self.down1 = segnetDown2(self.in_channels, 64)
         self.down2 = segnetDown2(64, 128)
         self.down3 = segnetDown3(128, 256)
         self.down4 = segnetDown3(256, 512)
-        self.down5 = segnetDown3(512, 512)
-
-        self.up5 = segnetUp3(512, 512)
+        self.down5 = segnetDown3(512, 512)  # out: 7x7x512
+        if shrink == 1:
+            self.down6 = segnetDown3(512, 512)
+            self.up6 = segnetUp3(512, 512)
+        if shrink == 2:
+            self.down6 = segnetDown3(512, 256)
+            self.up6 = segnetUp3(256, 512)
+        self.up5 = segnetUp3(512, 512)  # out: 7x7x512
         self.up4 = segnetUp3(512, 256)
         self.up3 = segnetUp3(256, 128)
         self.up2 = segnetUp2(128, 64)
         self.up1 = segnetUp2(64, n_classes)
 
     def forward(self, inputs):
-
         down1, indices_1, unpool_shape1 = self.down1(inputs)
         down2, indices_2, unpool_shape2 = self.down2(down1)
         down3, indices_3, unpool_shape3 = self.down3(down2)
         down4, indices_4, unpool_shape4 = self.down4(down3)
         down5, indices_5, unpool_shape5 = self.down5(down4)
 
-        # TODO: Add layer(s) that shrink the 7x7x512 even further. See what happens
+        if self.shrink:
+            # Add layer(s) that shrink the 7x7x512 even further. See what happens
+            down6, indices_6, unpool_shape6 = self.down6(down5)
+            up6 = self.up6(down6, indices_6, unpool_shape6)
+            up5 = self.up5(up6, indices_6, unpool_shape6)
+        else:
+            up5 = self.up5(down5, indices_5, unpool_shape5)
 
-        up5 = self.up5(down5, indices_5, unpool_shape5)
         up4 = self.up4(up5, indices_4, unpool_shape4)
         up3 = self.up3(up4, indices_3, unpool_shape3)
         up2 = self.up2(up3, indices_2, unpool_shape2)
@@ -174,6 +183,6 @@ class SegNet(nn.Module):
 
 
 if __name__ == '__main__':
-    model = SegNet().to(device)
+    model = SegNet(shrink=1).to(device)
     # print(model)
     summary(model, (3, imsize, imsize))

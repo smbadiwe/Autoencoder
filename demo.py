@@ -6,25 +6,26 @@ import numpy as np
 import torch
 from imageio import imread, imsave
 from PIL import Image
-from config import device, save_folder, imsize
-from utils import ensure_folder
+from config import device, imsize
+from utils import ensure_folder, get_checkpoint_folder
 
 
 def imresize(arr, dim_tuple):
     return np.array(Image.fromarray(arr).resize(size=dim_tuple))
 
 
-def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5):
+def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5, shrink=0):
     """
 
     :param loss_fn: The loss used. Here's it'll be used as sub-directory to get the actual model.
     :param checkpoint_file: # model checkpoint: number or file name without directory or extension
     :param num_test_samples:
+    :param shrink:
     :return:
     """
     if checkpoint_file is None:
         checkpoint_file = 'BEST_checkpoint'
-    folder = path.join(save_folder, loss_fn)
+    folder = get_checkpoint_folder(loss_fn=loss_fn, shrink=shrink)
     try:
         checkpoint_file += 0  # test if param is int
         fs = glob(path.join(folder, f"checkpoint_{checkpoint_file}_*.tar"))
@@ -79,6 +80,7 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5):
         preds = model(imgs)
 
     ck = path.basename(checkpoint_file).replace("checkpoint", "").replace(".tar", "")
+    prepend = f"shrink-{shrink}_" if shrink else ""
     for i in range(num_test_samples):
         out = preds[i]
         out = out.cpu().numpy()
@@ -87,12 +89,12 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5):
         out = np.clip(out, 0, 255)
         out = out.astype(np.uint8)
         out = cv.cvtColor(out, cv.COLOR_RGB2BGR)
-        cv.imwrite(f'images/{i}_out_{loss_fn}_{ck}.png', out)
+        cv.imwrite(f'images/{prepend}{i}_out_{loss_fn}_{ck}.png', out)
 
 
 if __name__ == '__main__':
     # main(loss_fn='dis', checkpoint_file=0, num_test_samples=1)
     for lfn in ["mse", "rmse", "idiv", "dis"]:
         for fn in [0, 20, 60, 115, None]:
-            main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=3)
+            main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=3, shrink=1)
             # main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=1)

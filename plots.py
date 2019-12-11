@@ -109,8 +109,8 @@ def visualize_reconstructions(image_num=0):
 
 
 if __name__ == "__main__":
-    # visualize("idiv", r"$\mathit{I}$-divergence")
-    # visualize("rmse", r"RMSE")
-    # visualize("mse", r"MSE")
-    # visualize("dis", r"$d_{IS}$")
-    visualize_reconstructions()
+    visualize("idiv", r"$\mathit{I}$-divergence")
+    visualize("rmse", r"RMSE")
+    visualize("mse", r"MSE")
+    visualize("dis", r"$d_{IS}$")
+    # visualize_reconstructions()

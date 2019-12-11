@@ -3,7 +3,6 @@ import time
 import torch.optim as optim
 from torch import nn
 from torch.utils.data import DataLoader
-import torch.nn.functional as F
 from data_gen import VaeDataset
 from models import SegNet
 from utils import *
@@ -68,7 +67,7 @@ def train(epoch, train_loader, model, optimizer, loss_fn):
     losses = ExpoAverageMeter()  # loss (per word decoded)
 
     start = time.time()
-
+    n_train = len(train_loader)
     loss_function = losses_dict[loss_fn]
     # Batches
     for i_batch, (x, y) in enumerate(train_loader):
@@ -107,10 +106,11 @@ def train(epoch, train_loader, model, optimizer, loss_fn):
 
         # Print status
         if i_batch % print_freq == 0:
-            print('Epoch: [{0}][{1}/{2}]\t'
+            print('Epoch: [{epoch}][{i_batch}/{0}]\t'
                   'Batch Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
-                  '{3} Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(epoch, i_batch, len(train_loader), loss_fn,
-                                                                      batch_time=batch_time, loss=losses))
+                  '{loss_fn} Loss {loss.val:.4f} ({loss.avg:.4f})\t'.format(n_train, epoch=epoch,
+                                                                            i_batch=i_batch, loss_fn=loss_fn,
+                                                                            batch_time=batch_time, loss=losses))
 
 
 def valid(val_loader, model, loss_fn):
@@ -187,13 +187,13 @@ def main(loss_fn, shrink=0):
 
         # One epoch's validation
         val_loss = valid(val_loader=val_loader, model=model, loss_fn=loss_fn)
-        print(f'\n * {loss_fn} - LOSS - {val_loss:.3f}\n')
+        print(f'\nSHRINK-{shrink} * {loss_fn} - LOSS - {val_loss:.3f}\n')
 
         # Check if there was an improvement
         is_best = val_loss < best_loss
         if not is_best:
             epochs_since_improvement += 1
-            print("\nEpochs since last improvement: %d\n" % (epochs_since_improvement,))
+            print(f"\nSHRINK-{shrink} - Epochs since last improvement: {epochs_since_improvement}\n")
         else:
             epochs_since_improvement = 0
             best_loss = val_loss
@@ -203,7 +203,8 @@ def main(loss_fn, shrink=0):
 
 
 if __name__ == '__main__':
-    # main(loss_fn="rmse")
-    # main(loss_fn="mse")
-    # main(loss_fn="dis")
-    main(loss_fn="idiv", shrink=1)
+    sh = get_shrink_value_from_input(default=1)
+    main(loss_fn="rmse", shrink=sh)
+    # main(loss_fn="mse", shrink=sh)
+    # main(loss_fn="dis", shrink=sh)
+    # main(loss_fn="idiv", shrink=sh)

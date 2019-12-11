@@ -1,6 +1,18 @@
 from os import makedirs, path
-
+import sys
 from config import *
+
+
+def get_shrink_value_from_input(default=0):
+    argv = sys.argv
+    try:
+        for k, v in enumerate(argv):
+            if v == '-sh':
+                default = int(argv[k + 1])
+    except Exception as ex:
+        print(ex, f"Setting shrink value to {default}")
+    print(f"Using shrink value: {default}")
+    return default
 
 
 def ensure_folder(folder):
@@ -32,7 +44,9 @@ class ExpoAverageMeter(object):
 
 
 def get_checkpoint_folder(loss_fn, shrink):
-    return path.join(save_folder, f"shrink{shrink}" if shrink else "", loss_fn)
+    if shrink:
+        return path.join(save_folder, f"shrink{shrink}", loss_fn)
+    return path.join(save_folder, loss_fn)
 
 
 def save_checkpoint(epoch, model, optimizer, loss_fn, val_loss, is_best, shrink):

@@ -1,12 +1,12 @@
 # Autoencoder
 
-This repository is to do convolutional autoencoder with SetNet based on Cars Dataset from Stanford.
+This repository implements convolutional autoencoder with [SegNet](https://arxiv.org/abs/1511.00561) based on Cars Dataset from Stanford.
 
 
 ## Dependencies
 
-- Python 3.5
-- PyTorch 0.4
+- Python 3.6+
+- PyTorch 1.2.0
 
 ## Dataset
 
@@ -37,8 +37,12 @@ $ python pre_process.py
 
 ### Train
 ```bash
-$ python train.py
+$ python train.py [-sh 0]
 ```
+The parameter `sh` controls the size of the bottleneck. It only accepts values:
+ - `0`: Default. Leaves the bottleneck size to SegNet/VGG16, which `(7, 7, 512).
+  - `1`: Bottleneck size: `(7, 7, 256)`; done with one more conv layer.
+  - `2`: Bottleneck size: `(7, 7, 128)`; done with two more conv layers.
 
 ### Demo
 Download pre-trained [model](https://github.com/foamliu/Autoencoder/releases/download/v1.0/BEST_checkpoint.tar) weights into "models" folder then run:

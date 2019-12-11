@@ -1,6 +1,6 @@
 import torch.nn as nn
 from torchsummary_v2 import summary
-
+from utils import get_shrink_value_from_input
 from config import device, imsize
 
 
@@ -38,6 +38,16 @@ class conv2DBatchNormRelu(nn.Module):
         return outputs
 
 
+class segnetDown1(nn.Module):
+    def __init__(self, in_size, out_size):
+        super(segnetDown1, self).__init__()
+        self.conv1 = conv2DBatchNormRelu(in_size, out_size, 3, 1, 1)
+
+    def forward(self, inputs):
+        outputs = self.conv1(inputs)
+        return outputs
+
+
 class segnetDown2(nn.Module):
     def __init__(self, in_size, out_size):
         super(segnetDown2, self).__init__()
@@ -68,6 +78,16 @@ class segnetDown3(nn.Module):
         unpooled_shape = outputs.size()
         outputs, indices = self.maxpool_with_argmax(outputs)
         return outputs, indices, unpooled_shape
+
+
+class segnetUp1(nn.Module):
+    def __init__(self, in_size, out_size):
+        super(segnetUp1, self).__init__()
+        self.conv1 = conv2DBatchNormRelu(in_size, out_size, 3, 1, 1)
+
+    def forward(self, inputs):
+        outputs = self.conv1(inputs)
+        return outputs
 
 
 class segnetUp2(nn.Module):
@@ -113,11 +133,13 @@ class SegNet(nn.Module):
         self.down4 = segnetDown3(256, 512)
         self.down5 = segnetDown3(512, 512)  # out: 7x7x512
         if shrink == 1:
-            self.down6 = segnetDown3(512, 512)
-            self.up6 = segnetUp3(512, 512)
+            self.down6 = segnetDown1(512, 256)
+            self.up6 = segnetUp1(256, 512)
         if shrink == 2:
-            self.down6 = segnetDown3(512, 256)
-            self.up6 = segnetUp3(256, 512)
+            self.down6 = segnetDown1(512, 256)
+            self.down7 = segnetDown1(256, 128)
+            self.up7 = segnetUp1(128, 256)
+            self.up6 = segnetUp1(256, 512)
         self.up5 = segnetUp3(512, 512)  # out: 7x7x512
         self.up4 = segnetUp3(512, 256)
         self.up3 = segnetUp3(256, 128)
@@ -133,10 +155,20 @@ class SegNet(nn.Module):
 
         if self.shrink:
             # Add layer(s) that shrink the 7x7x512 even further. See what happens
-            down6, indices_6, unpool_shape6 = self.down6(down5)
-            up6 = self.up6(down6, indices_6, unpool_shape6)
-            up5 = self.up5(up6, indices_6, unpool_shape6)
-        else:
+            if self.shrink == 1:
+                down6 = self.down6(down5)
+                up6 = self.up6(down6)
+                up5 = self.up5(up6, indices_5, unpool_shape5)
+            elif self.shrink == 2:
+                down6 = self.down6(down5)
+                down7 = self.down7(down6)
+                up7 = self.up7(down7)
+                up6 = self.up6(up7)
+                up5 = self.up5(up6, indices_5, unpool_shape5)
+            else:
+                self.shrink = 0
+
+        if not self.shrink:
             up5 = self.up5(down5, indices_5, unpool_shape5)
 
         up4 = self.up4(up5, indices_4, unpool_shape4)
@@ -183,6 +215,6 @@ class SegNet(nn.Module):
 
 
 if __name__ == '__main__':
-    model = SegNet(shrink=1).to(device)
+    model = SegNet(shrink=get_shrink_value_from_input()).to(device)
     # print(model)
     summary(model, (3, imsize, imsize))

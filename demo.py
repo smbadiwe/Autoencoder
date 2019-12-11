@@ -7,7 +7,7 @@ import torch
 from imageio import imread, imsave
 from PIL import Image
 from config import device, imsize
-from utils import ensure_folder, get_checkpoint_folder
+from utils import ensure_folder, get_checkpoint_folder, get_shrink_value_from_input
 
 
 def imresize(arr, dim_tuple):
@@ -96,5 +96,5 @@ if __name__ == '__main__':
     # main(loss_fn='dis', checkpoint_file=0, num_test_samples=1)
     for lfn in ["mse", "rmse", "idiv", "dis"]:
         for fn in [0, 20, 60, 115, None]:
-            main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=3, shrink=1)
+            main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=3, shrink=get_shrink_value_from_input())
             # main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=1)

@@ -1,18 +1,23 @@
 from os import makedirs, path
 import sys
 from config import *
+from glob import glob
 
 
-def get_shrink_value_from_input(default=0):
+def get_shrink_value_and_loss_from_input(default_sh=0, default_lf="rmse"):
     argv = sys.argv
     try:
         for k, v in enumerate(argv):
             if v == '-sh':
-                default = int(argv[k + 1])
+                default_sh = int(argv[k + 1])
+            if v == '-lf':
+                default_lf = argv[k + 1]
     except Exception as ex:
-        print(ex, f"Setting shrink value to {default}")
-    print(f"Using shrink value: {default}")
-    return default
+        print(ex, f"Setting shrink value [sh] to {default_sh} and loss function [lf] to {default_lf}")
+    if default_lf not in {"idiv", "mse", "rmse", "dis"}:
+        raise Exception(f"Invalid loss. Values must be 'idiv', 'mse', 'rmse' or 'dis'.")
+    print(f"Using shrink value [sh]: {default_sh} and loss function [lf]: {default_lf}")
+    return default_sh, default_lf
 
 
 def ensure_folder(folder):
@@ -30,10 +35,10 @@ def adjust_learning_rate(optimizer, shrink_factor):
 class ExpoAverageMeter(object):
     # Exponential Weighted Average Meter
     def __init__(self, beta=0.9):
-        self.reset()
+        self.reset(beta)
 
-    def reset(self):
-        self.beta = 0.9
+    def reset(self, beta):
+        self.beta = beta
         self.val = 0
         self.avg = 0
         self.count = 0
@@ -43,10 +48,26 @@ class ExpoAverageMeter(object):
         self.avg = self.beta * self.avg + (1 - self.beta) * self.val
 
 
+def get_demo_output_image(loss_fn, shrink, sample_idx, ck):
+    prepend = f"shrink-{shrink}_" if shrink else ""
+    return f'images/{prepend}{sample_idx}_out_{loss_fn}_{ck}.png'
+
+
 def get_checkpoint_folder(loss_fn, shrink):
     if shrink:
         return path.join(save_folder, f"shrink{shrink}", loss_fn)
     return path.join(save_folder, loss_fn)
+
+
+def get_last_saved_checkpoint_number(loss_fn, shrink):
+    directory = get_checkpoint_folder(loss_fn=loss_fn, shrink=shrink)
+    ensure_folder(directory)
+    fs = glob(path.join(directory, f"checkpoint_*.tar"))
+    return len(fs)  # checkpoint is numbered from 0 to len - 1. No gaps.
+    # if len(fs) == 0:
+    #     return 0
+    # fs = [int(path.basename(ff).split("_")[1]) for ff in fs]
+    # return max(fs)
 
 
 def save_checkpoint(epoch, model, optimizer, loss_fn, val_loss, is_best, shrink):

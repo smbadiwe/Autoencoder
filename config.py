@@ -8,6 +8,6 @@ batch_size = 32
 lr = 0.0001
 patience = 50
 start_epoch = 0
-epochs = 120
+epochs = 30  # 120
 print_freq = 20
 save_folder = 'models'

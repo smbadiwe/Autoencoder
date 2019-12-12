@@ -99,7 +99,8 @@ def train(epoch, train_loader, model, optimizer, loss_fn):
         optimizer.step()
 
         # Keep track of metrics
-        losses.update(loss.item())
+        # losses.update(loss.item())
+        losses.update(loss)
         batch_time.update(time.time() - start)
 
         start = time.time()
@@ -152,6 +153,10 @@ def valid(val_loader, model, loss_fn):
 
 
 def main(loss_fn, shrink=0):
+    start = get_last_saved_checkpoint_number(loss_fn=loss_fn, shrink=shrink)
+    if start >= epochs:
+        print(f"{loss_fn} | {shrink} - The last epoch [{epochs}] has already been completed")
+        return None
     train_loader = DataLoader(dataset=VaeDataset('train'), batch_size=batch_size, shuffle=True,
                               pin_memory=True, drop_last=True)
     val_loader = DataLoader(dataset=VaeDataset('valid'), batch_size=batch_size, shuffle=False,
@@ -159,8 +164,11 @@ def main(loss_fn, shrink=0):
     # Create SegNet model
     label_nbr = 3
     model = SegNet(n_classes=label_nbr, shrink=shrink)
-    if torch.cuda.device_count() > 1:
-        print("Let's use", torch.cuda.device_count(), "GPUs!")
+    n_gpus = torch.cuda.device_count()
+    if n_gpus == 0:
+        print(f"{loss_fn} | {shrink} - !!! - Program is not using GPU. It'll run a lot slower")
+    if n_gpus > 1:
+        print(f"{loss_fn} | {shrink} - Let's use {n_gpus} GPUs!")
         # dim = 0 [40, xxx] -> [10, ...], [10, ...], [10, ...], [10, ...] on 4 GPUs
         model = nn.DataParallel(model)
     # Use appropriate device
@@ -173,9 +181,9 @@ def main(loss_fn, shrink=0):
 
     best_loss = 9.e15
     epochs_since_improvement = 0
-
+    print(f"{loss_fn} | {shrink} - Resuming from Epoch {start}")
     # Epochs
-    for epoch in range(start_epoch, epochs):
+    for epoch in range(start, epochs):
         # Decay learning rate if there is no improvement for 8 consecutive epochs, and terminate training after 20
         # if epochs_since_improvement == 20:
         #     break
@@ -203,8 +211,5 @@ def main(loss_fn, shrink=0):
 
 
 if __name__ == '__main__':
-    sh = get_shrink_value_from_input(default=1)
-    main(loss_fn="rmse", shrink=sh)
-    # main(loss_fn="mse", shrink=sh)
-    # main(loss_fn="dis", shrink=sh)
-    # main(loss_fn="idiv", shrink=sh)
+    sh, lf = get_shrink_value_and_loss_from_input()
+    main(loss_fn=lf, shrink=sh)

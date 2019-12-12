@@ -1,13 +1,10 @@
-from os import path, listdir
+from os import listdir
 import random
-from glob import glob
 import cv2 as cv
 import numpy as np
-import torch
 from imageio import imread, imsave
 from PIL import Image
-from config import device, imsize
-from utils import ensure_folder, get_checkpoint_folder, get_shrink_value_from_input
+from utils import *
 
 
 def imresize(arr, dim_tuple):
@@ -80,7 +77,6 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5, shrink=0):
         preds = model(imgs)
 
     ck = path.basename(checkpoint_file).replace("checkpoint", "").replace(".tar", "")
-    prepend = f"shrink-{shrink}_" if shrink else ""
     for i in range(num_test_samples):
         out = preds[i]
         out = out.cpu().numpy()
@@ -89,12 +85,13 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5, shrink=0):
         out = np.clip(out, 0, 255)
         out = out.astype(np.uint8)
         out = cv.cvtColor(out, cv.COLOR_RGB2BGR)
-        cv.imwrite(f'images/{prepend}{i}_out_{loss_fn}_{ck}.png', out)
+        cv.imwrite(get_demo_output_image(loss_fn=loss_fn, shrink=shrink, sample_idx=i, ck=ck), out)
 
 
 if __name__ == '__main__':
     # main(loss_fn='dis', checkpoint_file=0, num_test_samples=1)
+    sh, lf = get_shrink_value_and_loss_from_input()
     for lfn in ["mse", "rmse", "idiv", "dis"]:
         for fn in [0, 20, 60, 115, None]:
-            main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=3, shrink=get_shrink_value_from_input())
+            main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=3, shrink=sh)
             # main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=1)

@@ -1,6 +1,6 @@
 import torch.nn as nn
 from torchsummary_v2 import summary
-from utils import get_shrink_value_from_input
+from utils import get_shrink_value_and_loss_from_input
 from config import device, imsize
 
 
@@ -215,6 +215,6 @@ class SegNet(nn.Module):
 
 
 if __name__ == '__main__':
-    model = SegNet(shrink=get_shrink_value_from_input()).to(device)
+    model = SegNet(shrink=get_shrink_value_and_loss_from_input()).to(device)
     # print(model)
     summary(model, (3, imsize, imsize))

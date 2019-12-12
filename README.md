@@ -37,12 +37,18 @@ $ python pre_process.py
 
 ### Train
 ```bash
-$ python train.py [-sh 0]
+$ python train.py [-sh 0] [-lf rmse]
 ```
 The parameter `sh` controls the size of the bottleneck. It only accepts values:
  - `0`: Default. Leaves the bottleneck size to SegNet/VGG16, which `(7, 7, 512).
   - `1`: Bottleneck size: `(7, 7, 256)`; done with one more conv layer.
   - `2`: Bottleneck size: `(7, 7, 128)`; done with two more conv layers.
+
+The parameter `lf` speficies the loss function, a.k.a distortion measure or distance measure. It only accepts values
+- `mse`: mean square error
+- `rmse`: root mean square error
+- `idiv`: _I_-divergence
+- `dis`: Itakura-Saito distance
 
 ### Demo
 Download pre-trained [model](https://github.com/foamliu/Autoencoder/releases/download/v1.0/BEST_checkpoint.tar) weights into "models" folder then run:

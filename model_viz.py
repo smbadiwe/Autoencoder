@@ -1,9 +1,13 @@
+# credit: https://colab.research.google.com/github/Niranjankumar-c/DeepLearning-PadhAI/blob/master/DeepLearning_Materials/6_VisualizationCNN_Pytorch/CNNVisualisation.ipynb#scrollTo=BFT5lgx3b-Fs
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 # import torch
 # import torchvision
 import torch.nn as nn
+from torchsummary_v2 import summary
+from utils import *
+from os import path
 
 
 def plot_filters_single_channel_big(t):
@@ -107,3 +111,19 @@ def plot_weights(model, layer_num, single_channel=True, collated=False):
 
     else:
         print("Can only visualize layers which are convolutional")
+
+
+def get_trained_model(loss_fn, shrink):
+    folder = get_checkpoint_folder(loss_fn=loss_fn, shrink=shrink)
+    checkpoint_file = path.join(folder, f"BEST_checkpoint.tar")
+    # Load model
+    checkpoint = torch.load(checkpoint_file)
+    # print("Checkpoint keys:\n", checkpoint.keys())
+    model = checkpoint['model']
+    print(model)
+    # summary(model, (3, imsize, imsize))
+    # model = model.to(device)
+
+
+if __name__ == "__main__":
+    get_trained_model(loss_fn="mse", shrink=0)

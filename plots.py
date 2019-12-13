@@ -3,12 +3,13 @@ from config import epochs, save_folder
 from os import path
 from glob import glob
 from imageio import imread
-from utils import get_checkpoint_folder, get_demo_output_image
+from utils import get_checkpoint_folder, get_demo_output_image, get_fn_list
 
 
 def get_loss_values(loss_fn, shrink):
     losses = [0.0] * epochs
     folder = get_checkpoint_folder(loss_fn=loss_fn, shrink=shrink)
+
     try:
         for i in range(epochs):
             fs = glob(path.join(folder, f"checkpoint_{i}_*.tar"))
@@ -17,8 +18,7 @@ def get_loss_values(loss_fn, shrink):
             losses[i] = float(loss)
     except Exception as ex:
         print(f"Failed reading files or values from folder: {folder}...")
-        print(ex)
-
+        raise ex
     return losses
 
 
@@ -116,7 +116,7 @@ def visualize_reconstructions(image_num=0, shrink=0):
     plt.imshow(img, interpolation='nearest')
     i = 6
     for lfn in ["mse", "rmse", "idiv", "dis"]:
-        for fn in [0, 20, 60, 115, None]:
+        for fn in get_fn_list():
             # img_file = glob(f"images/{image_num}_out_{lfn}_{f'_{fn}' if fn is not None else 'BEST'}_*.png")[0]
             ck = f'_{fn}_*' if fn is not None else 'BEST_*'
             img_f = get_demo_output_image(loss_fn=lfn, shrink=shrink, sample_idx=image_num, ck=ck)
@@ -145,10 +145,11 @@ def visualize_reconstructions(image_num=0, shrink=0):
 
 
 if __name__ == "__main__":
-    # visualize("idiv", r"$\mathit{I}$-divergence")
-    # visualize("rmse", r"RMSE")
-    # visualize("mse", r"MSE")
-    # visualize("dis", r"$d_{IS}$")
-    for ir in range(0, 3):
-        # visualize_reconstructions(image_num=ir, shrink=0)
-        visualize_x_and_x_hat(loss_fn="mse", image_num=ir, shrink=1)
+    shr = 1
+    visualize("idiv", shrink=shr, label=r"$\mathit{I}$-divergence")
+    visualize("rmse", shrink=shr, label=r"RMSE")
+    visualize("mse", shrink=shr, label=r"MSE")
+    visualize("dis", shrink=shr, label=r"$d_{IS}$")
+    # for ir in range(0, 3):
+    #     # visualize_reconstructions(image_num=ir, shrink=shr)
+    #     visualize_x_and_x_hat(loss_fn="mse", image_num=ir, shrink=shr)

@@ -36,6 +36,7 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5, shrink=0):
     # print(f'checkpoint: {checkpoint_file}')
     # Load model
     checkpoint = torch.load(checkpoint_file)
+    # print("Checkpoint keys:\n", checkpoint.keys())
     model = checkpoint['model']
     model = model.to(device)
     model.eval()
@@ -61,7 +62,7 @@ def main(loss_fn="rmse", checkpoint_file=None, num_test_samples=5, shrink=0):
 
     imgs = torch.zeros([num_test_samples, 3, imsize, imsize], dtype=torch.float, device=device)
     test_images.sort()
-    print(f"\ntest images: {test_images}\n")
+    # print(f"\ntest images: {test_images}\n")
     for i, fpath in enumerate(test_images):
         # Read images
         img = imread(fpath)
@@ -92,6 +93,6 @@ if __name__ == '__main__':
     # main(loss_fn='dis', checkpoint_file=0, num_test_samples=1)
     sh, lf = get_shrink_value_and_loss_from_input()
     for lfn in ["mse", "rmse", "idiv", "dis"]:
-        for fn in [0, 20, 60, 115, None]:
+        for fn in get_fn_list():
             main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=3, shrink=sh)
             # main(loss_fn=lfn, checkpoint_file=fn, num_test_samples=1)

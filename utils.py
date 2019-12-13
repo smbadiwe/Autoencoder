@@ -59,6 +59,14 @@ def get_checkpoint_folder(loss_fn, shrink):
     return path.join(save_folder, loss_fn)
 
 
+def get_fn_list():
+    if epochs == 30:
+        fn_list = [0, 5, 15, 25, None]
+    else:
+        fn_list = [0, 20, 60, 115, None]
+    return fn_list
+
+
 def get_last_saved_checkpoint_number(loss_fn, shrink):
     directory = get_checkpoint_folder(loss_fn=loss_fn, shrink=shrink)
     ensure_folder(directory)
